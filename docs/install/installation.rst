@@ -4,15 +4,15 @@
 
 .. _installing-monai:
 
-==============================
-Installing MONAI for AMD ROCm
-==============================
+============================
+MONAI on ROCm installation
+============================
 
-This topic discusses how to install MONAI for AMD ROCm using the following options:
+To install MONAI on ROCm, you have the following options:
 
-- :ref:`From source (for developers) <source-install>`
+- :ref:`Use package manager <package-install>` (recommended)
 
-- :ref:`Using package manager (for users) <package-install>`
+- :ref:`Build from source <source-install>`
 
 System requirements
 --------------------
@@ -23,125 +23,22 @@ System requirements
 
 - Python version: 3.12
 
-- AMD Instinct GPU: MI300X, MI325X, MI355X
+- AMD Instinct™ GPU: MI355X, MI325X, or MI300X
 
 - `PyTorch for AMD ROCm <https://pytorch.org/blog/pytorch-for-amd-rocm-platform-now-available-as-python-package/>`_ version: 2.8.0 and later
 
-- NumPy version 1.24 and later and earlier than 2.4
+- NumPy version: No earlier than 1.24 and no later than 2.4
 
-For more information about dependencies, see the ``requirements*.txt`` file.
-
-.. _source-install:
-
-Installing from source
------------------------
-
-To build MONAI for AMD ROCm from source, follow the steps given in this section. This installation method should be used by MONAI for AMD ROCm developers. If you're a MONAI for AMD ROCm user, see :ref:`package-install`.
-
-1. Set up the Docker image using the ROCm Docker image from Dockerhub.
-
-   .. code-block:: shell
-
-      docker run --cap-add=SYS_PTRACE --ipc=host --privileged=true   \
-            --shm-size=512GB --network=host --device=/dev/kfd     \
-            --device=/dev/dri --group-add video -it               \
-            -v $HOME:$HOME  --name ${LOGNAME}_monai               \
-                                       rocm/dev-ubuntu-24.04:7.0.2-complete
-
-2. Install the required system dependencies.
-
-   .. code-block:: shell
-
-      apt-get update                                                        &&  \
-      apt-get install -y software-properties-common lsb-release gnupg wget  &&  \
-      apt-key adv --fetch-keys                                                  \
-                  https://apt.kitware.com/keys/kitware-archive-latest.asc &&  \
-      add-apt-repository -y "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && \
-      apt-get update && \
-      apt-get install -y --no-install-recommends \
-         build-essential git gcc g++ cmake \
-         ninja-build yasm python3-venv \
-         openssh-client \
-         libopenslide-dev libwebp-dev \
-         libzstd-dev && \
-      rm -rf /var/lib/apt/lists/*
-
-      ROCM_VERSION=$(cat /opt/rocm/.info/version) && \
-      UBUNTU_CODENAME=$(lsb_release -cs) && \
-      echo "Detected ROCm version: ${ROCM_VERSION}, Ubuntu codename: ${UBUNTU_CODENAME}" && \
-      MAJOR=$(echo ${ROCM_VERSION} | cut -d. -f1) && \
-      MINOR=$(echo ${ROCM_VERSION} | cut -d. -f2) && \
-      PATCH=$(echo ${ROCM_VERSION} | cut -d. -f3) && \
-      PATCH=${PATCH:-0} && \
-      VERNUM=$((MAJOR * 10000 + MINOR * 100 + PATCH)) && \
-      if [ "${PATCH}" = "0" ]; then SHORT_VERSION="${MAJOR}.${MINOR}"; else SHORT_VERSION="${MAJOR}.${MINOR}.${PATCH}"; fi
-
-      if ! dpkg -s amdgpu-install >/dev/null 2>&1; then \
-         rm -f /etc/apt/sources.list.d/amdgpu.list /etc/apt/sources.list.d/rocm.list && \
-         AMDGPU_URL="https://repo.radeon.com/amdgpu-install/${SHORT_VERSION}/ubuntu/${UBUNTU_CODENAME}/amdgpu-install_${SHORT_VERSION}.${VERNUM}-1_all.deb" && \
-         echo "Downloading: ${AMDGPU_URL}" && \
-         wget "${AMDGPU_URL}" -O amdgpu-install.deb && \
-         apt-get update && \
-         DEBIAN_FRONTEND=noninteractive apt-get install -y ./amdgpu-install.deb && \
-         rm amdgpu-install.deb; \
-      else \
-         echo "amdgpu-install already present, skipping install"; \
-      fi && \
-      apt-get update && \
-      apt-get install -y --no-install-recommends amdgpu-lib && \
-      apt-get install -y --no-install-recommends rocjpeg rocjpeg-dev && \
-      rm -rf /var/lib/apt/lists/*
-
-3. Download the latest version of MONAI for AMD ROCm from the git repository:
-
-   .. code-block:: shell
-
-      git clone git@github.com:ROCm-LS/monai.git
-      cd monai
-
-4. Create and activate the development environment for building MONAI for AMD ROCm.
-
-   .. code-block:: shell
-
-      python3 -m venv monai_dev
-      source monai_dev/bin/activate
-      pip install --upgrade pip
-      export HIP_PATH=/opt/rocm
-      export PATH=$HIP_PATH/bin:$PATH
-      export ROCM_PATH=/opt/rocm
-      export LD_LIBRARY_PATH=$HIP_PATH/lib:$LD_LIBRARY_PATH
-      export ROCM_HOME=/opt/rocm
-      export AMDGPU_TARGETS=gfx942
-      pip install --upgrade pip wheel setuptools
-      pip install torch torchvision torchaudio      \
-                  --index-url https://download.pytorch.org/whl/rocm7.1
-      pip install amd_hipcim --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple
-      pip install -r requirements-dev.txt -c amd-constraints.txt --build-constraint amd-constraints.txt
-
-5. Build and install MONAI for AMD ROCm on a ROCm based AMD system using the development environment.
-
-   To build and install the development version of MONAI for AMD ROCm, use:
-
-   .. code-block:: shell
-
-      BUILD_MONAI=1 FORCE_CUDA=1 python3 setup.py develop
-
-   To build and package an optimized wheel for installation, use:
-
-   .. code-block:: shell
-
-      BUILD_MONAI=1 FORCE_CUDA=1 python3 setup.py develop -O1 bdist_wheel
-
-   The preceding command builds the package in non-debug mode and the wheel file is generated under the ``dist`` directory.
+For the complete list of dependencies, see the `requirements.txt <https://github.com/ROCm-LS/monai/blob/main/requirements.txt>`_ file.
 
 .. _package-install:
 
 Installing using package manager
 ----------------------------------
 
-To install MONAI for AMD ROCm using package manager, follow the steps given in this section. This installation method should be used by MONAI for AMD ROCm users. If you're a MONAI for AMD ROCm developer, see :ref:`source-install`
+To install MONAI on ROCm using a package manager, follow the steps given in this section.
 
-1. Set up the Docker image using the ROCm Docker image from Dockerhub.
+1. Set up the Docker image using the ROCm Docker image from Docker Hub.
 
    .. code-block:: shell
 
@@ -217,7 +114,7 @@ To install MONAI for AMD ROCm using package manager, follow the steps given in t
 
       pip install torch torchvision torchaudio      \
                   --index-url https://download.pytorch.org/whl/rocm7.1
-      pip install amd_hipcim --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple/
+      pip install amd-hipcim --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple/
 
 5. Install the optional dependencies depending on the workload.
 
@@ -227,18 +124,121 @@ To install MONAI for AMD ROCm using package manager, follow the steps given in t
                   pynrrd clearml transformers pydicom fire ignite         \
                   parameterized tensorboard pytorch-ignite onnx
 
-6. Install MONAI optimized for AMD Instinct GPUs from the AMD PyPi repository.
+6. Install MONAI on ROCm from the AMD PyPI repository.
 
    .. code-block:: shell
 
-      pip install amd_monai --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple
+      pip install amd-monai --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple
+
+.. _source-install:
+
+Building from source
+---------------------
+
+To build MONAI on ROCm from source, follow the steps given in this section.
+
+1. Set up the Docker image using the ROCm Docker image from Docker Hub.
+
+   .. code-block:: shell
+
+      docker run --cap-add=SYS_PTRACE --ipc=host --privileged=true   \
+            --shm-size=512GB --network=host --device=/dev/kfd     \
+            --device=/dev/dri --group-add video -it               \
+            -v $HOME:$HOME  --name ${LOGNAME}_monai               \
+                                       rocm/dev-ubuntu-24.04:7.0.2-complete
+
+2. Install the required system dependencies.
+
+   .. code-block:: shell
+
+      apt-get update                                                        &&  \
+      apt-get install -y software-properties-common lsb-release gnupg wget  &&  \
+      apt-key adv --fetch-keys                                                  \
+                  https://apt.kitware.com/keys/kitware-archive-latest.asc &&  \
+      add-apt-repository -y "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" && \
+      apt-get update && \
+      apt-get install -y --no-install-recommends \
+         build-essential git gcc g++ cmake \
+         ninja-build yasm python3-venv \
+         openssh-client \
+         libopenslide-dev libwebp-dev \
+         libzstd-dev && \
+      rm -rf /var/lib/apt/lists/*
+
+      ROCM_VERSION=$(cat /opt/rocm/.info/version) && \
+      UBUNTU_CODENAME=$(lsb_release -cs) && \
+      echo "Detected ROCm version: ${ROCM_VERSION}, Ubuntu codename: ${UBUNTU_CODENAME}" && \
+      MAJOR=$(echo ${ROCM_VERSION} | cut -d. -f1) && \
+      MINOR=$(echo ${ROCM_VERSION} | cut -d. -f2) && \
+      PATCH=$(echo ${ROCM_VERSION} | cut -d. -f3) && \
+      PATCH=${PATCH:-0} && \
+      VERNUM=$((MAJOR * 10000 + MINOR * 100 + PATCH)) && \
+      if [ "${PATCH}" = "0" ]; then SHORT_VERSION="${MAJOR}.${MINOR}"; else SHORT_VERSION="${MAJOR}.${MINOR}.${PATCH}"; fi
+
+      if ! dpkg -s amdgpu-install >/dev/null 2>&1; then \
+         rm -f /etc/apt/sources.list.d/amdgpu.list /etc/apt/sources.list.d/rocm.list && \
+         AMDGPU_URL="https://repo.radeon.com/amdgpu-install/${SHORT_VERSION}/ubuntu/${UBUNTU_CODENAME}/amdgpu-install_${SHORT_VERSION}.${VERNUM}-1_all.deb" && \
+         echo "Downloading: ${AMDGPU_URL}" && \
+         wget "${AMDGPU_URL}" -O amdgpu-install.deb && \
+         apt-get update && \
+         DEBIAN_FRONTEND=noninteractive apt-get install -y ./amdgpu-install.deb && \
+         rm amdgpu-install.deb; \
+      else \
+         echo "amdgpu-install already present, skipping install"; \
+      fi && \
+      apt-get update && \
+      apt-get install -y --no-install-recommends amdgpu-lib && \
+      apt-get install -y --no-install-recommends rocjpeg rocjpeg-dev && \
+      rm -rf /var/lib/apt/lists/*
+
+3. Download the latest version of MONAI on ROCm from the GitHub repository:
+
+   .. code-block:: shell
+
+      git clone git@github.com:ROCm-LS/monai.git
+      cd monai
+
+4. Create and activate the development environment for building MONAI on ROCm.
+
+   .. code-block:: shell
+
+      python3 -m venv monai_dev
+      source monai_dev/bin/activate
+      pip install --upgrade pip
+      export HIP_PATH=/opt/rocm
+      export PATH=$HIP_PATH/bin:$PATH
+      export ROCM_PATH=/opt/rocm
+      export LD_LIBRARY_PATH=$HIP_PATH/lib:$LD_LIBRARY_PATH
+      export ROCM_HOME=/opt/rocm
+      export AMDGPU_TARGETS=gfx942
+      pip install --upgrade pip wheel setuptools
+      pip install torch torchvision torchaudio      \
+                  --index-url https://download.pytorch.org/whl/rocm7.1
+      pip install amd-hipcim --extra-index-url=https://pypi.amd.com/rocm-7.0.2/simple
+      pip install -r requirements-dev.txt -c amd-constraints.txt --build-constraint amd-constraints.txt
+
+5. Build and install MONAI on ROCm on a ROCm-based AMD system using the development environment.
+
+   To build and install the development version of MONAI on ROCm, use:
+
+   .. code-block:: shell
+
+      BUILD_MONAI=1 FORCE_CUDA=1 python3 setup.py develop
+
+   To build and package an optimized wheel for installation, use:
+
+   .. code-block:: shell
+
+      BUILD_MONAI=1 FORCE_CUDA=1 python3 setup.py develop -O1 bdist_wheel
+
+   The preceding command builds the package in non-debug mode and the wheel file is generated under the ``dist`` directory.
 
 Verify installation
 --------------------
 
-Use these commands to verify the MONAI for AMD ROCm installation:
+Use these commands to verify the MONAI on ROCm installation:
 
-- Print MONAI for AMD ROCm version.
+- Print the MONAI on ROCm version.
 
   .. code-block:: shell
 
@@ -246,7 +246,7 @@ Use these commands to verify the MONAI for AMD ROCm installation:
 
    1.5.0
 
-- Print MONAI for AMD ROCm package info.
+- Print the MONAI on ROCm package info.
 
   .. code-block:: shell
 

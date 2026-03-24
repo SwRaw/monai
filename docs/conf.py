@@ -38,7 +38,7 @@ all_article_info_author = ""
 version_number = "1.5.0"
 
 # for PDF output on Read the Docs
-project = "MONAI 1.5.0 for AMD ROCm"
+project = "MONAI 1.5.0 on ROCm"
 author = "Advanced Micro Devices, Inc."
 copyright = "Copyright (c) 2025 Advanced Micro Devices, Inc. All rights reserved."
 version = version_number
@@ -68,4 +68,5 @@ autodoc_default_options = {
 
 html_title = f"{project} documentation"
 
-external_projects_current_project = "MONAI for AMD ROCm"
+external_projects_current_project = "MONAI on ROCm"
+external_project_remote_repository = ""
